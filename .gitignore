@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Jupyter / IPython
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FastAPI / TensorFlow models
+*.h5
+*.hdf5
+*.pb
+*.tflite
+*.onnx
+*.ckpt
+*.pkl
+
+# Dataset (don’t upload large data to git!)
+dataset/
+data/
+*.zip
+
+# Node.js (for React frontend if inside same repo)
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# React build
+build/
+dist/
+*.cache
+.cache/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
