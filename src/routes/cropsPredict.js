@@ -58,18 +58,6 @@ app.post("/upload-image", upload.single("image"), async (req, res) => {
         quality: randomQuality,
         colorTone: randomColorTone,
         detectedSubject: randomSubject,
-        imageSize: {
-          width: Math.floor(Math.random() * 2000) + 800,
-          height: Math.floor(Math.random() * 2000) + 600,
-        },
-        fileSize: req.file.size,
-        format: req.file.mimetype,
-        uploadedAt: new Date().toISOString(),
-      },
-      metadata: {
-        originalName: req.file.originalname,
-        filename: req.file.filename,
-        path: req.file.path,
       },
     };
 
