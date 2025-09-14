@@ -4,14 +4,21 @@ from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras import layers, models
 
 # Dataset path
-DATASET_PATH = "dataset/"   # adjust to your dataset folder
-
+DATASET_PATH = "dataset/" 
 # Image size and batch
 img_size = (224, 224)
 batch_size = 32
 
 # Data generators
-datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+datagen = ImageDataGenerator(
+    rescale=1./255,
+    validation_split=0.2,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
 
 train_data = datagen.flow_from_directory(
     DATASET_PATH,

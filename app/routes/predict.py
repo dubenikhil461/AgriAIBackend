@@ -1,31 +1,36 @@
-from fastapi import APIRouter, UploadFile, File
-from tensorflow.keras.models import load_model
+from fastapi import APIRouter, UploadFile, File, HTTPException
+import tensorflow as tf
 import numpy as np
 from PIL import Image
+import io
+import os
 
-# Router
 router = APIRouter()
 
-# Load model
-model = load_model("app/models/disease_model.h5")
+# Load model & classes
+MODEL_PATH = os.path.join("app", "models", "disease_model.h5")
+CLASS_PATH = os.path.join("app", "models", "class_names.txt")
 
-# Load class names
-with open("app/models/class_names.txt") as f:
-    class_names = [line.strip() for line in f]
+model = tf.keras.models.load_model(MODEL_PATH)
+with open(CLASS_PATH, "r") as f:
+    class_names = [line.strip() for line in f.readlines()]
 
 @router.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # Read file
-    img = Image.open(file.file).convert("RGB")
-    img = img.resize((224, 224))
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)  # (1,224,224,3)
+    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+        raise HTTPException(status_code=400, detail="Invalid image file type")
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        image = image.resize((224, 224))
+        img_array = np.array(image) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-    # Prediction
-    preds = model.predict(img_array)
-    idx = np.argmax(preds[0])
-    result = {
-        "class": class_names[idx],
-        "confidence": float(np.max(preds[0]))
-    }
-    return result
+        predictions = model.predict(img_array)
+        predicted_index = int(np.argmax(predictions))
+        predicted_class = class_names[predicted_index]
+        confidence = float(np.max(predictions))
+
+        return {"class": predicted_class, "confidence": confidence}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
