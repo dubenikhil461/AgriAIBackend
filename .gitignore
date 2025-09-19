@@ -1,0 +1,58 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# VSCode / IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs & local files
+*.log
+*.out
+*.err
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Unit test / coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+.nox/
+.pytest_cache/
+.tox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Data dumps
+data/
+*.csv
+*.json
+*.sqlite3
+*.db
+
+# MongoDB dumps
+dump/
