@@ -53,6 +53,10 @@ app/dataset/*
 *.json
 *.sqlite3
 *.db
+app/datasets/
+app/data/
+app/models/
+logs/
 
 # MongoDB dumps
 dump/
