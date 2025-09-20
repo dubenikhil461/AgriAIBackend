@@ -1,9 +1,11 @@
 import os
 import random
 import shutil
+import io
 import numpy as np
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.preprocessing import image
+from PIL import Image
+from tensorflow.keras.applications.efficientnet import preprocess_input
 
 # ---------------- Dataset Split ----------------
 def create_splits(src_root, dest_root, val_frac=0.15, test_frac=0.1, seed=42):
@@ -14,8 +16,14 @@ def create_splits(src_root, dest_root, val_frac=0.15, test_frac=0.1, seed=42):
         src_dir = os.path.join(src_root, cls)
         files = [os.path.join(src_dir, f) for f in os.listdir(src_dir)
                  if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-        train_val, test = train_test_split(files, test_size=test_frac, random_state=seed, stratify=[cls]*len(files))
-        train, val = train_test_split(train_val, test_size=val_frac/(1-test_frac), random_state=seed, stratify=[cls]*len(train_val))
+        
+        train_val, test = train_test_split(
+            files, test_size=test_frac, random_state=seed, stratify=[cls]*len(files)
+        )
+        train, val = train_test_split(
+            train_val, test_size=val_frac/(1-test_frac), random_state=seed, stratify=[cls]*len(train_val)
+        )
+        
         for split_name, split_files in [('train', train), ('val', val), ('test', test)]:
             out_dir = os.path.join(dest_root, split_name, cls)
             os.makedirs(out_dir, exist_ok=True)
@@ -24,8 +32,12 @@ def create_splits(src_root, dest_root, val_frac=0.15, test_frac=0.1, seed=42):
 
 # ---------------- Preprocessing ----------------
 def preprocess_image(img_bytes, img_size=224):
-    from PIL import Image
-    img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+    """
+    Convert uploaded image bytes to preprocessed numpy array for EfficientNet.
+    """
+    img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     img = img.resize((img_size, img_size))
-    img_arr = np.array(img)/255.0
-    return np.expand_dims(img_arr, axis=0)
+    x = np.array(img, dtype=np.float32)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)  # Use EfficientNet preprocessing
+    return x
