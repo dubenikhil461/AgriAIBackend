@@ -1,33 +1,45 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
-from app.src import inference
-import os
+from fastapi import FastAPI
+from app.route import predictroute,scrappingroute,userRoute   # your route files
+from apscheduler.schedulers.background import BackgroundScheduler
+from app.scrapping.statewise import run_job  # your scraper function
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="SIH Multi-Model API")
+import pytz
 
-# ---------------- Load all models ----------------
-models_to_load = {
-    "model1": {
-        "path": "app/models/model1/best_model.h5",
-    },
-    "model2": {
-        "path": "app/models/model2/best_model.h5",
-    }
-}
-
-for name, info in models_to_load.items():
-    model_path = info["path"]
-    class_indices_path = model_path.replace('best_model.h5', 'class_indices.txt')
-    if os.path.exists(model_path) and os.path.exists(class_indices_path):
-        inference.load_model_by_name(name, model_path, class_indices_path)
+IST = pytz.timezone("Asia/Kolkata")
+scheduler = BackgroundScheduler(timezone=IST)
 
 
-# ---------------- Predict endpoint ----------------
-@app.post("/predict/{model_name}")
-async def predict_endpoint(model_name: str, file: UploadFile = File(...)):
-    try:
-        img_bytes = await file.read()
-        result = inference.predict(model_name, img_bytes)
-        return JSONResponse(result)
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Run once immediately when app starts
+#     run_job()
+
+#     # # Schedule daily scraping at 7 AM IST
+#     # scheduler.add_job(run_job, "cron", hour=7, minute=0)
+#     # scheduler.start()
+#     print("🚀 Scheduler started: run_job will run daily at 7:00 AM IST")
+
+#     yield  # application runs here
+
+#     # Shutdown scheduler gracefully
+#     # scheduler.shutdown()
+#     print("🛑 Scheduler stopped")
+
+# Initialize FastAPI app with lifespan
+# lifespan=lifespan
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # or ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers from each file
+app.include_router(predictroute.router, prefix="/api")
+app.include_router(scrappingroute.router, prefix="/api")
+app.include_router(userRoute.router, prefix="/api")
