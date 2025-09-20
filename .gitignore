@@ -48,8 +48,8 @@ htmlcov/
 .env.*.local
 
 # Data dumps
-data/
-*.csv
+app/dataset/*
+.csv
 *.json
 *.sqlite3
 *.db
