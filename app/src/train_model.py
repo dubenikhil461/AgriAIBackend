@@ -5,8 +5,9 @@ from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+from utils import create_splits
 
-def train_model(dataset_dir, save_dir, model_name, img_size=224, batch_size=32, epochs=12):
+def train_single_model(dataset_dir, save_dir, model_name, img_size=224, batch_size=32, epochs=12):
     train_dir = os.path.join(dataset_dir, 'train')
     val_dir = os.path.join(dataset_dir, 'val')
     os.makedirs(save_dir, exist_ok=True)
@@ -33,17 +34,36 @@ def train_model(dataset_dir, save_dir, model_name, img_size=224, batch_size=32, 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     # Callbacks
-    model_path = os.path.join(save_dir, f'{model_name}.h5')
+    model_path = os.path.join(save_dir, 'best_model.h5')
     checkpoint = ModelCheckpoint(model_path, monitor='val_accuracy', save_best_only=True, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2, verbose=1)
     early_stop = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
 
+    # Train
     model.fit(train_gen, validation_data=val_gen, epochs=epochs, callbacks=[checkpoint, reduce_lr, early_stop])
 
-    # Optional fine-tuning
+    # Fine-tune
     base_model.trainable = True
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
     model.fit(train_gen, validation_data=val_gen, epochs=5, callbacks=[checkpoint, reduce_lr, early_stop])
 
-    print(f"Model {model_name} saved at {model_path}")
+    print(f"[{model_name}] Training completed. Model saved at {model_path}")
     return model, train_gen.class_indices
+
+# ------------------ RUN ALL MODELS ------------------
+if __name__ == "__main__":
+    datasets_root = "../datasets"
+    data_root = "../data"
+    models_root = "../models"
+
+    for model_name in os.listdir(datasets_root):
+        src_dataset = os.path.join(datasets_root, model_name)
+        dest_dataset = os.path.join(data_root, model_name)
+        save_dir = os.path.join(models_root, model_name)
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Split dataset
+        create_splits(src_dataset, dest_dataset)
+
+        # Train model
+        train_single_model(dest_dataset, save_dir, model_name)
