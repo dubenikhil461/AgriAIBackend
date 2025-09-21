@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.config.db import db
 from datetime import datetime
-from typing import  Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 router = APIRouter()
 
@@ -43,22 +43,48 @@ def get_districts(state: str):
 def get_markets(state: str, district: str):
     collection = get_collection(state)
     markets = distinct_nonempty(collection, "market", {"district": district})
-    return {"markets": markets, "count": len(markets), "state": state, "district": district}
+    return {"markets": markets, "count": len(markets)}
 
 @router.get("/data")
-def get_data(state: str, district: str, market: str,commodity: str,limit: int = 100):
+def get_data(
+    state: str, 
+    district: str, 
+    market: str, 
+    commodity: Optional[str] = None, 
+    limit: int = 100
+):
     """
     After selecting state -> district -> market,
     return all documents for that selection with all keys
     """
     collection = get_collection(state)
-    cursor = collection.find({"district": district, "market": market,"commodity":commodity}).limit(limit)
+    
+    # Build query
+    query = {"district": district, "market": market}
+    if commodity:
+        query["commodity"] = commodity
+    
+    cursor = collection.find(query).limit(limit)
     results = [format_doc(doc) for doc in cursor]
+    
     return {
         "data": results,
         "count": len(results),
         "state": state,
         "district": district,
         "market": market,
+        "commodity": commodity,
         "last_updated": datetime.now().isoformat()
     }
+
+# Additional route to get available commodities for a specific market
+@router.get("/commodities")
+def get_commodities(state: str, district: str, market: str):
+    """Get available commodities for a specific market"""
+    collection = get_collection(state)
+    commodities = distinct_nonempty(
+        collection, 
+        "commodity", 
+        {"district": district, "market": market}
+    )
+    return {"commodities": commodities, "count": len(commodities)}
