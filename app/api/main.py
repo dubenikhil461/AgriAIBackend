@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.route import predictroute,scrappingroute,userRoute   # your route files
+from app.route import predictroute,scrappingroute,userRoute,emailroute   # your route files
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.scrapping.statewise import run_job  # your scraper function
 from contextlib import asynccontextmanager
@@ -43,3 +43,4 @@ app.add_middleware(
 app.include_router(predictroute.router, prefix="/api")
 app.include_router(scrappingroute.router, prefix="/api")
 app.include_router(userRoute.router, prefix="/api")
+app.include_router(emailroute.router, prefix="/api")

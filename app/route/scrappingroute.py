@@ -46,13 +46,13 @@ def get_markets(state: str, district: str):
     return {"markets": markets, "count": len(markets), "state": state, "district": district}
 
 @router.get("/data")
-def get_data(state: str, district: str, market: str, limit: int = 100):
+def get_data(state: str, district: str, market: str,commodity: str,limit: int = 100):
     """
     After selecting state -> district -> market,
     return all documents for that selection with all keys
     """
     collection = get_collection(state)
-    cursor = collection.find({"district": district, "market": market}).limit(limit)
+    cursor = collection.find({"district": district, "market": market,"commodity":commodity}).limit(limit)
     results = [format_doc(doc) for doc in cursor]
     return {
         "data": results,

@@ -29,10 +29,10 @@ def load_model_by_name(model_name, model_path, class_indices_path):
     print(f"Loaded model: {model_name}")
     return model
 
-def predict(model_name, img_bytes, topk=1):
+def predict(model_name, img_bytes):
     """
-    Predict top-k classes for a given image using the specified model.
-    Default topk=1 for only the most confident prediction.
+    Predict the most confident class for a given image using the specified model.
+    Returns a single dictionary with label and confidence.
     """
     if model_name not in loaded_models:
         raise ValueError(f"Model {model_name} not loaded")
@@ -41,9 +41,11 @@ def predict(model_name, img_bytes, topk=1):
     x = preprocess_image(img_bytes)
     preds = model.predict(x)[0]
 
-    # Get top-k indices
-    top_idxs = preds.argsort()[-topk:][::-1]
-    
-    # Build results
-    results = [{"label": model.class_labels[i], "confidence": float(preds[i])} for i in top_idxs]
-    return results
+    # Get index of most confident class
+    top_idx = np.argmax(preds)
+    top_label = model.class_labels[top_idx]
+    top_confidence = float(preds[top_idx])
+
+    # Return single result
+    result = {"label": top_label, "confidence": top_confidence}
+    return result
