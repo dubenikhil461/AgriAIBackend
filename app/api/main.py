@@ -11,25 +11,25 @@ IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Run once immediately when app starts
-#     run_job()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run once immediately when app starts
+    run_job()
 
-#     # # Schedule daily scraping at 7 AM IST
-#     # scheduler.add_job(run_job, "cron", hour=7, minute=0)
-#     # scheduler.start()
-#     print("🚀 Scheduler started: run_job will run daily at 7:00 AM IST")
+    # Schedule daily scraping at 7 AM IST
+    scheduler.add_job(run_job, "cron", hour=8, minute=0)
+    scheduler.start()
+    print("🚀 Scheduler started: run_job will run daily at 7:00 AM IST")
 
-#     yield  # application runs here
+    yield  # application runs here
 
-#     # Shutdown scheduler gracefully
-#     # scheduler.shutdown()
-#     print("🛑 Scheduler stopped")
+    # Shutdown scheduler gracefully
+    # scheduler.shutdown()
+    print("🛑 Scheduler stopped")
 
 # Initialize FastAPI app with lifespan
-# lifespan=lifespan
-app = FastAPI()
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
