@@ -1,3 +1,4 @@
+# run_scraper.py
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -7,47 +8,34 @@ from app.scrapping.comodities import commodities, state
 import pytz
 from time import sleep
 import random
+import os
 
+# ---------------- Config ----------------
 URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
 
 HEADERS = {
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8', 
-    'accept-language': 'en-GB,en;q=0.5', 
-    'cache-control': 'no-cache', 
-    'pragma': 'no-cache', 
-    'priority': 'u=0, i', 
-    'referer': 'https://agmarknet.gov.in/', 
-    'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"', 
-    'sec-ch-ua-mobile': '?0', 
-    'sec-ch-ua-platform': '"macOS"', 
-    'sec-fetch-dest': 'document', 
-    'sec-fetch-mode': 'navigate', 
-    'sec-fetch-site': 'same-origin', 
-    'sec-fetch-user': '?1', 
-    'sec-gpc': '1', 
-    'upgrade-insecure-requests': '1', 
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'accept-language': 'en-GB,en;q=0.7',
+    'referer': 'https://agmarknet.gov.in/',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) '
+                  'Chrome/139.0.0.0 Safari/537.36'
 }
 
 IST = pytz.timezone("Asia/Kolkata")
 
-# ----- Add all proxies here -----
-PROXIES_LIST = [
-   "142.111.48.253","198.23.239.134","45.38.107.97","107.172.163.27","64.137.96.74",
-   "154.203.43.247","84.247.60.125","216.10.27.159","142.111.67.146","142.147.128.93"
+# Comma-separated proxies in environment variable (optional)
+PROXIES = os.getenv("PROXIES", "").split(",")
 
-]
+# ------------- Helper Functions -------------
 
-def get_working_proxy():
-    """Return a random working proxy from the list."""
-    proxy_ip = random.choice(PROXIES_LIST)
-    proxies = {
-        "http": f"http://{proxy_ip}",
-        "https": f"http://{proxy_ip}"
-    }
-    return proxies
+def get_proxy():
+    if not PROXIES or PROXIES[0] == "":
+        return None
+    proxy_ip = random.choice(PROXIES)
+    return {"http": f"http://{proxy_ip}", "https": f"http://{proxy_ip}"}
 
-def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str):
+def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_retries=3):
     params = {
         "Tx_Commodity": str(commodity_item["value"]),
         "Tx_State": state_item["value"],
@@ -60,13 +48,12 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str):
         "Tx_StateHead": state_item["name"],
     }
 
-    attempt = 0
-    max_attempts = len(PROXIES_LIST)
-    while attempt < max_attempts:
-        proxies = get_working_proxy()
+    for attempt in range(1, max_retries + 1):
+        proxy = get_proxy()
+        proxy_info = proxy["http"] if proxy else "No Proxy"
         try:
-            print(f"🔄 Fetching {commodity_item['name']} in {state_item['name']} using proxy {proxies['http']}")
-            response = requests.get(URL, headers=HEADERS, params=params, proxies=proxies, timeout=15)
+            print(f"🔄 Attempt {attempt}: Fetching {commodity_item['name']} in {state_item['name']} using {proxy_info}")
+            response = requests.get(URL, headers=HEADERS, params=params, proxies=proxy, timeout=15)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, "lxml")
@@ -80,7 +67,6 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str):
                 cols = [td.get_text(strip=True) for td in row.find_all("td")]
                 if len(cols) != 10:
                     continue
-
                 try:
                     price_date = IST.localize(datetime.strptime(cols[9], "%d %b %Y"))
                     last_updated_ist = datetime.now(IST).replace(tzinfo=None)
@@ -112,23 +98,32 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str):
                 collection_name = state_item["name"].replace(" ", "_")
                 collection = db[collection_name]
                 result = collection.bulk_write(operations)
-                print(f"✅ Processed {len(operations)} records for {commodity_item['name']} in {state_item['name']} - New: {result.upserted_count}, Updated: {result.modified_count}")
+                print(f"✅ Processed {len(operations)} records for {commodity_item['name']} in {state_item['name']} "
+                      f"- New: {result.upserted_count}, Updated: {result.modified_count}")
             else:
                 print(f"⚠️ No valid rows found for {commodity_item['name']} in {state_item['name']}")
+            return  # success
 
-            return  # success, exit loop
         except Exception as e:
-            print(f"❌ Error with proxy {proxies['http']}: {e}, trying next proxy...")
-            attempt += 1
-            sleep(1)
-    print(f"❌ All proxies failed for {commodity_item['name']} in {state_item['name']}")
+            print(f"❌ Error on attempt {attempt} for {commodity_item['name']} in {state_item['name']}: {e}")
+            sleep(2)
+
+    print(f"❌ All {max_retries} attempts failed for {commodity_item['name']} in {state_item['name']}")
+
+# ------------- Main Job -------------
 
 def run_job():
     now = datetime.now(IST)
     current_date = now.strftime("%d-%b-%Y")
 
+    print(f"🕒 Starting scraper at {now}")
+
     for s in state:
         for c in commodities:
             fetch_and_store(s, c, current_date)
 
-    print(f"Job completed at {now}")
+    print(f"✅ Job completed at {datetime.now(IST)}")
+
+# ------------- If running directly -------------
+if __name__ == "__main__":
+    run_job()
