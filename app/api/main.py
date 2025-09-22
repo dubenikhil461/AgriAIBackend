@@ -33,7 +33,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://agriaiapp-tau.vercel.app"
+        "https://agriai-ebon.vercel.app/"
     ],
     allow_credentials=True,
     allow_methods=["*"],
