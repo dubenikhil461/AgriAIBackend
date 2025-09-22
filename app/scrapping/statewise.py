@@ -13,14 +13,22 @@ import os
 # ---------------- Config ----------------
 URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
 
-HEADERS = {
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'accept-language': 'en-GB,en;q=0.7',
-    'referer': 'https://agmarknet.gov.in/',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                  'AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/139.0.0.0 Safari/537.36'
-}
+HEADERS = { 
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8', 
+    'accept-language': 'en-GB,en;q=0.7', 
+    'priority': 'u=0, i', 
+    'referer': 'https://agmarknet.gov.in/', 
+    'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"', 
+    'sec-ch-ua-mobile': '?0', 
+    'sec-ch-ua-platform': '"macOS"', 
+    'sec-fetch-dest': 'document', 
+    'sec-fetch-mode': 'navigate', 
+    'sec-fetch-site': 'same-origin', 
+    'sec-fetch-user': '?1', 
+    'sec-gpc': '1', 
+    'upgrade-insecure-requests': '1', 
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
+  }
 
 IST = pytz.timezone("Asia/Kolkata")
 

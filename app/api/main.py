@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.route import predictroute, scrappingroute, userRoute, emailroute
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.scrapping.statewise import run_job
-from contextlib import asynccontextmanager
+# from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 import pytz
 
@@ -10,23 +10,24 @@ IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    run_job()
-    # Schedule daily scraping at 8 AM IST
-    scheduler.add_job(run_job, "cron", hour=6, minute=0)
-    scheduler.start()
-    print("🚀 Scheduler started: run_job will run daily at 5:00 AM IST")
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     run_job()
+#     # Schedule daily scraping at 8 AM IST
+#     scheduler.add_job(run_job, "cron", hour=6, minute=0)
+#     scheduler.start()
+#     print("🚀 Scheduler started: run_job will run daily at 5:00 AM IST")
 
-    yield  # Application runs while scheduler is active
+#     yield  # Application runs while scheduler is active
 
-    # Shutdown scheduler gracefully
-    scheduler.shutdown()
-    print("🛑 Scheduler stopped")
+#     # Shutdown scheduler gracefully
+#     scheduler.shutdown()
+#     print("🛑 Scheduler stopped")
 
 
 # Initialize FastAPI app with lifespan
-app = FastAPI(lifespan=lifespan)
+# lifespan=lifespan
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
