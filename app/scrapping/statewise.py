@@ -1,27 +1,36 @@
 import requests
 from bs4 import BeautifulSoup
-from app.scrapping.comodities import commodities, state
 from datetime import datetime
 from pymongo import UpdateOne
-from app.config.db import db  # your MongoDB connection
+from app.config.db import db
+from app.scrapping.comodities import commodities, state
 import pytz
 
-# -------------------- CONFIG --------------------
 URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
+
 HEADERS = {
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "accept-language": "en-GB,en;q=0.7",
-    "referer": "https://agmarknet.gov.in/",
-    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
-}
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8', 
+    'accept-language': 'en-GB,en;q=0.5', 
+    'cache-control': 'no-cache', 
+    'pragma': 'no-cache', 
+    'priority': 'u=0, i', 
+    'referer': 'https://agmarknet.gov.in/', 
+    'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"', 
+    'sec-ch-ua-mobile': '?0', 
+    'sec-ch-ua-platform': '"macOS"', 
+    'sec-fetch-dest': 'document', 
+    'sec-fetch-mode': 'navigate', 
+    'sec-fetch-site': 'same-origin', 
+    'sec-fetch-user': '?1', 
+    'sec-gpc': '1', 
+    'upgrade-insecure-requests': '1', 
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
+  }
+
 
 IST = pytz.timezone("Asia/Kolkata")
 
-# -------------------- FETCH & STORE --------------------
-def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, db):
-    """
-    Fetch commodity prices for a given state and store in MongoDB.
-    """
+def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str):
     params = {
         "Tx_Commodity": str(commodity_item["value"]),
         "Tx_State": state_item["value"],
@@ -35,86 +44,71 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, db):
     }
 
     try:
-        print(f"Fetching {commodity_item['name']} prices in {state_item['name']}...")
+        print(f"🔄 Fetching data for State: {state_item['name']} | Commodity: {commodity_item['name']} | Date: {date_str}")
+
         response = requests.get(URL, headers=HEADERS, params=params, timeout=30)
         response.raise_for_status()
-
         soup = BeautifulSoup(response.text, "lxml")
         table = soup.find("table", {"id": "cphBody_GridPriceData"})
-
         if not table:
-            print(f"❌ No data found for {commodity_item['name']} in {state_item['name']}")
+            print(f"⚠️ No table found for {commodity_item['name']} in {state_item['name']}")
             return
 
-        rows = table.find_all("tr")
-        data_list = []
-
-        for row in rows[1:]:
+        operations = []
+        for row in table.find_all("tr")[1:]:
             cols = [td.get_text(strip=True) for td in row.find_all("td")]
             if len(cols) != 10:
-                continue  # skip invalid rows
+                continue
 
             try:
-                price_date = datetime.strptime(cols[9], "%d %b %Y")
-                price_Date = IST.localize(price_date)
-                record = {
+                price_date = IST.localize(datetime.strptime(cols[9], "%d %b %Y"))
+
+                # IST naive datetime for LastUpdated
+                last_updated_ist = datetime.now(IST).replace(tzinfo=None)
+
+                filter_query = {
                     "state": state_item["name"],
                     "district": cols[1],
                     "market": cols[2],
                     "commodity": cols[3],
                     "variety": cols[4],
                     "grade": cols[5],
+                }
+
+                record = {
+                    **filter_query,
                     "min_price": float(cols[6]),
                     "max_price": float(cols[7]),
                     "modal_price": float(cols[8]),
-                    "price_date": price_Date,
-                    "LastUpdated": datetime.strptime("%d-%b-%Y %H:%M:%S"),
+                    "price_date": price_date,
+                    "LastUpdated": last_updated_ist,
                 }
-                data_list.append(record)
+
+                operations.append(UpdateOne(filter_query, {"$set": record}, upsert=True))
             except Exception as parse_err:
-                print(f"⚠️ Skipping row due to parse error: {parse_err}")
+                print(f"⚠️ Skipping row in {commodity_item['name']} ({state_item['name']}) due to parsing error: {parse_err}")
+                continue
 
-        if data_list:
-            collection_name = state_item["name"].replace(" ", "_")
-            collection = db[collection_name]
+        if not operations:
+            print(f"⚠️ No valid rows found for {commodity_item['name']} in {state_item['name']}")
+            return
 
-            operations = [
-                UpdateOne(
-                    {
-                        "district": d["district"],
-                        "market": d["market"],
-                        "commodity": d["commodity"],
-                        "variety": d["variety"],
-                        "price_date": d["price_date"],
-                    },
-                    {"$set": d},
-                    upsert=True,
-                )
-                for d in data_list
-            ]
+        collection_name = state_item["name"].replace(" ", "_")
+        collection = db[collection_name]
 
-            if operations:
-                result = collection.bulk_write(operations)
-                print(f"✅ {collection_name}: {result.upserted_count} new, {result.modified_count} updated.")
-        else:
-            print(f"⚠️ No rows found for {commodity_item['name']} in {state_item['name']}")
+        result = collection.bulk_write(operations)
+        print(f"✅ Successfully processed {len(operations)} records for {commodity_item['name']} in {state_item['name']} - New: {result.upserted_count}, Updated: {result.modified_count}")
 
-    except requests.RequestException as req_err:
-        print(f"❌ HTTP Error: {req_err}")
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error fetching {commodity_item['name']} in {state_item['name']}: {e}")
 
 
-# -------------------- MAIN JOB --------------------
 def run_job():
-    """
-    Run scraper for all states and commodities for today's date.
-    """
     now = datetime.now(IST)
     current_date = now.strftime("%d-%b-%Y")
 
     for s in state:
         for c in commodities:
-            fetch_and_store(s, c, current_date, db)
+            fetch_and_store(s, c, current_date)
 
-    print(f"\n✅ Job completed at {now}\n")
+    print(f"Job completed at {now}")
