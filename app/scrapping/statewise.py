@@ -8,6 +8,7 @@ from app.scrapping.comodities import commodities, state
 import pytz
 from time import sleep
 import random
+import dotenv
 import os
 
 # ---------------- Config ----------------
@@ -31,7 +32,7 @@ HEADERS = {
   }
 
 IST = pytz.timezone("Asia/Kolkata")
-
+dotenv.load_dotenv()
 # Comma-separated proxies in environment variable (optional)
 PROXIES = os.getenv("PROXIES", "").split(",")
 

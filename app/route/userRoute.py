@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, HTTPException
 from jose import jwt
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
@@ -23,5 +24,5 @@ async def google_auth(request: Request):
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google token")
 
-    backend_jwt = jwt.encode({"email": idinfo["email"]}, SECRET_KEY, algorithm="HS256")
+    backend_jwt = jwt.encode({"email": idinfo["email"],"exp": datetime.utcnow() + timedelta(hours=24)}, SECRET_KEY, algorithm="HS256")
     return {"jwt": backend_jwt, "user": idinfo}
