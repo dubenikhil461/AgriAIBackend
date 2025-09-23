@@ -30,12 +30,12 @@ app = FastAPI(lifespan=lifespan)
 # ✅ Allow frontend (both local + deployed)
 # origins = [
 #     "https://agriai-ebon.vercel.app",  # production frontend
-#     # "http://localhost:5173",           # local dev
+#     "http://localhost:5173",           # local dev
 # ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins="https://agriai-ebon.vercel.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
