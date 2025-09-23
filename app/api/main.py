@@ -15,7 +15,7 @@ scheduler = BackgroundScheduler(timezone=IST)
 
 @asynccontextmanager 
 async def lifespan(app: FastAPI):
-#  run_job()
+ run_job()
   # # Schedule daily scraping at 8 AM IST # 
  scheduler.add_job(run_job, "cron", hour=23, minute=50)
  scheduler.start() 
