@@ -8,7 +8,7 @@ from app.scrapping.comodities import commodities, state
 import pytz
 from time import sleep
 import dotenv
-import os
+
 
 # ---------------- Config ----------------
 URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
@@ -29,10 +29,27 @@ HEADERS = {
     'sec-gpc': '1', 
     'upgrade-insecure-requests': '1', 
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
-}
+    'cookie':'__AntiXsrfToken=10f464f3292b4f74bfd4fbccffbec9ae; ASP.NET_SessionId=igg3ikwernciuguixqpqyqrr'    
+    }
 
+
+# Timezone
 IST = pytz.timezone("Asia/Kolkata")
 dotenv.load_dotenv()
+
+# # ---------------- Proxy List ----------------
+# PROXIES = [
+#     "http://xeodruel:07v9vsvi536c@142.111.48.253:7030",
+#     "http://xeodruel:07v9vsvi536c@198.23.239.134:6540",
+#     "http://xeodruel:07v9vsvi536c@45.38.107.97:6014",
+#     "http://xeodruel:07v9vsvi536c@107.172.163.27:6543",
+#     "http://xeodruel:07v9vsvi536c@64.137.96.74:6641",
+#     "http://xeodruel:07v9vsvi536c@154.203.43.247:5536",
+#     "http://xeodruel:07v9vsvi536c@84.247.60.125:6095",
+#     "http://xeodruel:07v9vsvi536c@216.10.27.159:6837",
+#     "http://xeodruel:07v9vsvi536c@142.111.67.146:5611",
+#     "http://xeodruel:07v9vsvi536c@142.147.128.93:6095"  # Replace PORT if different
+# ]
 
 # ------------- Helper Functions -------------
 
@@ -50,6 +67,9 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_r
     }
 
     for attempt in range(1, max_retries + 1):
+        # proxy = random.choice(PROXIES)
+        # proxies = {"http": proxy, "https": proxy}
+
         try:
             print(f"🔄 Attempt {attempt}: Fetching {commodity_item['name']} in {state_item['name']}")
             response = requests.get(URL, headers=HEADERS, params=params, timeout=15)
@@ -114,7 +134,6 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_r
 def run_job():
     now = datetime.now(IST)
     current_date = now.strftime("%d-%b-%Y")
-
     print(f"🕒 Starting scraper at {now}")
 
     for s in state:
