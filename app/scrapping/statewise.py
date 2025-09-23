@@ -7,7 +7,6 @@ from app.config.db import db
 from app.scrapping.comodities import commodities, state
 import pytz
 from time import sleep
-import random
 import dotenv
 import os
 
@@ -30,20 +29,12 @@ HEADERS = {
     'sec-gpc': '1', 
     'upgrade-insecure-requests': '1', 
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
-  }
+}
 
 IST = pytz.timezone("Asia/Kolkata")
 dotenv.load_dotenv()
-# Comma-separated proxies in environment variable (optional)
-PROXIES = os.getenv("PROXIES", "").split(",")
 
 # ------------- Helper Functions -------------
-
-def get_proxy():
-    if not PROXIES or PROXIES[0] == "":
-        return None
-    proxy_ip = random.choice(PROXIES)
-    return {"http": f"http://{proxy_ip}", "https": f"http://{proxy_ip}"}
 
 def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_retries=3):
     params = {
@@ -59,11 +50,9 @@ def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_r
     }
 
     for attempt in range(1, max_retries + 1):
-        proxy = get_proxy()
-        proxy_info = proxy["http"] if proxy else "No Proxy"
         try:
-            print(f"🔄 Attempt {attempt}: Fetching {commodity_item['name']} in {state_item['name']} using {proxy_info}")
-            response = requests.get(URL, headers=HEADERS, params=params, proxies=proxy, timeout=15)
+            print(f"🔄 Attempt {attempt}: Fetching {commodity_item['name']} in {state_item['name']}")
+            response = requests.get(URL, headers=HEADERS, params=params, timeout=15)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, "lxml")
