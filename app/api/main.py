@@ -15,7 +15,7 @@ scheduler = BackgroundScheduler(timezone=IST)
 
 @asynccontextmanager 
 async def lifespan(app: FastAPI):
-#  run_job()
+ run_job()
   # # Schedule daily scraping at 8 AM IST # 
  scheduler.add_job(run_job, "cron", hour=6, minute=0)
  scheduler.start() 
@@ -28,14 +28,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # ✅ Allow frontend (both local + deployed)
-# origins = [
-#     "https://agriai-ebon.vercel.app",  # production frontend
-#     "http://localhost:5173",           # local dev
-# ]
+origins = [
+    "https://agriai-ebon.vercel.app",  # production frontend
+    # "http://localhost:5173",           # local dev
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins="https://agriai-ebon.vercel.app",
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
