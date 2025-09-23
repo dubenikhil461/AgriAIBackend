@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.route import predictroute, scrappingroute, userRoute, emailroute
+from app.route import predictroute
+# , scrappingroute, userRoute, emailroute
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.scrapping.statewise import run_job
 from starlette.responses import Response
@@ -9,21 +10,21 @@ from contextlib import asynccontextmanager
 import pytz
 import os
 
+# ✅ Import your new APIs
+from routes.crop_api import router as crop_router
+from routes.fertilizer_api import router as fertilizer_router
+
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
-
 # @asynccontextmanager 
 # async def lifespan(app: FastAPI):
-# #  run_job()
-#   # # Schedule daily scraping at 8 AM IST # 
-#  scheduler.add_job(run_job, "cron", hour=23, minute=50)
-#  scheduler.start() 
-#  print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
-#  yield 
-#  # Application runs while scheduler is active # # Shutdown scheduler gracefully # 
-#  scheduler.shutdown() 
-#  print("🛑 Scheduler stopped")
+#     scheduler.add_job(run_job, "cron", hour=23, minute=50)
+#     scheduler.start() 
+#     print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
+#     yield 
+#     scheduler.shutdown() 
+#     print("🛑 Scheduler stopped")
 
 app = FastAPI()
 
@@ -59,6 +60,10 @@ def root():
 
 # Routers
 app.include_router(predictroute.router, prefix="/api")
-app.include_router(scrappingroute.router, prefix="/api")
-app.include_router(userRoute.router, prefix="/api")
-app.include_router(emailroute.router, prefix="/api")
+# app.include_router(scrappingroute.router, prefix="/api")
+# app.include_router(userRoute.router, prefix="/api")
+# app.include_router(emailroute.router, prefix="/api")
+
+# ✅ Add Crop & Fertilizer APIs
+app.include_router(crop_router, prefix="/api")
+app.include_router(fertilizer_router, prefix="/api")
