@@ -44,7 +44,7 @@ htmlcov/
 
 # Datasets and ML models
 datasets/
-models/*.pkl
+# models/*.pkl
 
 # MongoDB dumps
 dump/

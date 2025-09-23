@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from app.route import predictroute
-# , scrappingroute, userRoute, emailroute
+from app.route import predictroute, scrappingroute, userRoute, emailroute
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.scrapping.statewise import run_job
 from starlette.responses import Response
@@ -60,9 +59,9 @@ def root():
 
 # Routers
 app.include_router(predictroute.router, prefix="/api")
-# app.include_router(scrappingroute.router, prefix="/api")
-# app.include_router(userRoute.router, prefix="/api")
-# app.include_router(emailroute.router, prefix="/api")
+app.include_router(scrappingroute.router, prefix="/api")
+app.include_router(userRoute.router, prefix="/api")
+app.include_router(emailroute.router, prefix="/api")
 
 # ✅ Add Crop & Fertilizer APIs
 app.include_router(crop_router, prefix="/api")
