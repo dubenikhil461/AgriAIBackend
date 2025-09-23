@@ -9,17 +9,16 @@ venv/
 ENV/
 env/
 
-# VSCode / IDE settings
+# IDE settings
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Logs & local files
+# Logs
+logs/
 *.log
 *.out
 *.err
@@ -28,16 +27,12 @@ Thumbs.db
 build/
 dist/
 *.egg-info/
-.eggs/
 
 # Unit test / coverage
 htmlcov/
 .coverage
-.coverage.*
 .cache
-.nox/
 .pytest_cache/
-.tox/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -47,16 +42,9 @@ htmlcov/
 .env.local
 .env.*.local
 
-# Data dumps
-
-app/dataset/*
-.csv
-*.json
-*.sqlite3
-*.db
-app/datasets/
-app/data/
-logs/
+# Datasets and ML models
+datasets/
+models/*.pkl
 
 # MongoDB dumps
 dump/
