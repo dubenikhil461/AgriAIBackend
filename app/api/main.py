@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown() 
     print("🛑 Scheduler stopped")
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # ✅ Allow frontend (both local + deployed)
 origins = [
