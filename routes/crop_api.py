@@ -6,7 +6,7 @@ import numpy as np
 router = APIRouter()
 
 # Load trained model
-crop_model = joblib.load("models/crop_model.pkl")
+crop_model = joblib.load("app/models/model2/crop_model.pkl")
 
 class CropInput(BaseModel):
     N: int

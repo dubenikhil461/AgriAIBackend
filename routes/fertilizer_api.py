@@ -6,7 +6,7 @@ import numpy as np
 router = APIRouter()
 
 # Load trained fertilizer model
-fertilizer_model = joblib.load("models/fertilizer_model.pkl")
+fertilizer_model = joblib.load("app/models/model2/fertilizer_model.pkl")
 
 # Request schema
 class FertilizerInput(BaseModel):

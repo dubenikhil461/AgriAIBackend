@@ -16,21 +16,21 @@ from routes.fertilizer_api import router as fertilizer_router
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
-# @asynccontextmanager 
-# async def lifespan(app: FastAPI):
-#     scheduler.add_job(run_job, "cron", hour=23, minute=50)
-#     scheduler.start() 
-#     print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
-#     yield 
-#     scheduler.shutdown() 
-#     print("🛑 Scheduler stopped")
+@asynccontextmanager 
+async def lifespan(app: FastAPI):
+    scheduler.add_job(run_job, "cron", hour=23, minute=50)
+    scheduler.start() 
+    print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
+    yield 
+    scheduler.shutdown() 
+    print("🛑 Scheduler stopped")
 
 app = FastAPI()
 
 # ✅ Allow frontend (both local + deployed)
 origins = [
     "https://agriai-ebon.vercel.app",  # production frontend
-    # "http://localhost:5173",           # local dev
+    "http://localhost:5173",           # local dev
 ]
 
 app.add_middleware(
@@ -41,16 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Fix OAuth popup issue (but don’t overrestrict)
-class COOPMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response: Response = await call_next(request)
-        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
-        # Only set COEP if you actually need it
-        # response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
-        return response
-
-app.add_middleware(COOPMiddleware)
 
 # Root route
 @app.get("/")
