@@ -16,17 +16,18 @@ from routes.fertilizer_api import router as fertilizer_router
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
-@asynccontextmanager 
-async def lifespan(app: FastAPI):
-    run_job()
-    scheduler.add_job(run_job, "cron", hour=23, minute=50)
-    scheduler.start() 
-    print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
-    yield 
-    scheduler.shutdown() 
-    print("🛑 Scheduler stopped")
+# @asynccontextmanager 
+# async def lifespan(app: FastAPI):
+#     run_job()
+#     scheduler.add_job(run_job, "cron", hour=23, minute=50)
+#     scheduler.start() 
+#     print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
+#     yield 
+#     scheduler.shutdown() 
+#     print("🛑 Scheduler stopped")
 
-app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # ✅ Allow frontend (both local + deployed)
 origins = [
