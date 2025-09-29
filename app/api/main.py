@@ -43,6 +43,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class RemoveCOOPMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response: Response = await call_next(request)
+        if "cross-origin-opener-policy" in response.headers:
+            del response.headers["cross-origin-opener-policy"]
+        if "cross-origin-embedder-policy" in response.headers:
+            del response.headers["cross-origin-embedder-policy"]
+        return response
+
+app.add_middleware(RemoveCOOPMiddleware)
 
 # Root route
 @app.get("/")
