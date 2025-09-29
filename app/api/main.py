@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.route import predictroute, scrappingroute, userRoute, emailroute
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.scrapping.statewise import run_job
+# from app.scrapping.statewise import run_job
 from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
