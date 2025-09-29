@@ -4,7 +4,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # from app.scrapping.statewise import run_job
 from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 import pytz
 import os
@@ -15,6 +14,7 @@ from routes.fertilizer_api import router as fertilizer_router
 
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
+
 
 # @asynccontextmanager 
 # async def lifespan(app: FastAPI):
@@ -35,6 +35,7 @@ origins = [
     "http://localhost:5173",           # local dev
 ]
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -43,16 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class RemoveCOOPMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response: Response = await call_next(request)
-        if "cross-origin-opener-policy" in response.headers:
-            del response.headers["cross-origin-opener-policy"]
-        if "cross-origin-embedder-policy" in response.headers:
-            del response.headers["cross-origin-embedder-policy"]
-        return response
-
-app.add_middleware(RemoveCOOPMiddleware)
+# ✅ Force override COOP / COEP headers
+@app.middleware("http")
+async def disable_coop_coep(request, call_next):
+    response: Response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
+    response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
+    return response
 
 # Root route
 @app.get("/")
