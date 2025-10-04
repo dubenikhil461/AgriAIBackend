@@ -44,13 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Force override COOP / COEP headers
-@app.middleware("http")
-async def disable_coop_coep(request, call_next):
-    response: Response = await call_next(request)
-    response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
-    response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
-    return response
+
 
 # Root route
 @app.get("/")
