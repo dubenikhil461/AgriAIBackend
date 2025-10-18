@@ -22,8 +22,8 @@ class ContactForm(BaseModel):
 # List of members to send email to
 MEMBERS = [
     "nikhildubey461@gmail.com",
-    "Mayankpandey892899@gmail.com",
-    "pplsolutionsprateek7@gmail.com"
+    # "Mayankpandey892899@gmail.com",
+    # "pplsolutionsprateek7@gmail.com"
 ]
 
 # ---------- Email sending function ----------

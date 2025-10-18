@@ -1,41 +1,32 @@
 from fastapi import FastAPI
-from app.route import predictroute, scrappingroute, emailroute
-from apscheduler.schedulers.background import BackgroundScheduler
-# from app.scrapping.statewise import run_job
-from starlette.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
-import os
 
-# ✅ Import your new APIs
+from app.route import predictroute, scrappingroute, emailroute
 from routes.crop_api import router as crop_router
 from routes.fertilizer_api import router as fertilizer_router
+from app.scrapping.statewise import run_job
 
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
+async def lifespan(app: FastAPI):
+    # run_job()
+    scheduler.add_job(run_job, "cron", hour=23, minute=50)
+    scheduler.start()
+    print("🚀 Scheduler started: run_job will run daily at 11:50pm IST")
+    yield
+    scheduler.shutdown()
+    print("🛑 Scheduler stopped")
 
-# @asynccontextmanager 
-# async def lifespan(app: FastAPI):
-#     run_job()
-#     scheduler.add_job(run_job, "cron", hour=23, minute=50)
-#     scheduler.start() 
-#     print("🚀 Scheduler started: run_job will run daily at 11:50pm :00 AM IST")
-#     yield 
-#     scheduler.shutdown() 
-#     print("🛑 Scheduler stopped")
+app = FastAPI(lifespan=lifespan)
 
-# app = FastAPI(lifespan=lifespan)
-app = FastAPI()
-
-# ✅ Allow frontend (both local + deployed)
+# CORS
 origins = [
-    "https://agriai-ebon.vercel.app",  # production frontend
-    "http://localhost:5173",           # local dev
+    "https://agriai-ebon.vercel.app",
+    "http://localhost:5173",
 ]
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -44,18 +35,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
-# Root route
+# Root
 @app.get("/")
 def root():
-    return {"message": "api is running"}
+    return {"message": "API is running"}
 
 # Routers
 app.include_router(predictroute.router, prefix="/api")
 app.include_router(scrappingroute.router, prefix="/api")
 app.include_router(emailroute.router, prefix="/api")
-
-# ✅ Add Crop & Fertilizer APIs
 app.include_router(crop_router, prefix="/api")
 app.include_router(fertilizer_router, prefix="/api")
