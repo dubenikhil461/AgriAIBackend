@@ -1,147 +1,138 @@
-# run_scraper.py
 import requests
-from bs4 import BeautifulSoup
-from datetime import datetime
-from pymongo import UpdateOne
+import time
 from app.config.db import db
-from app.scrapping.comodities import commodities, state
-import pytz
-from time import sleep
-import dotenv
+
+# Your commodity list
+commodities = [
+    {"value": 49, "name": "Arhar (Tur/Red Gram)(Whole)"},
+    {"value": 28, "name": "Bajra(Pearl Millet/Cumbu)"},
+    {"value": 29, "name": "Barley (Jau)"},
+    {"value": 6, "name": "Bengal Gram(Gram)(Whole)"},
+    {"value": 8, "name": "Black Gram (Urd Beans)(Whole)"},
+    {"value": 129, "name": "Copra"},
+    {"value": 15, "name": "Cotton"},
+    {"value": 9, "name": "Green Gram (Moong)(Whole)"},
+    {"value": 10, "name": "Groundnut"},
+    {"value": 5, "name": "Jowar(Sorghum)"},
+    {"value": 16, "name": "Jute"},
+    {"value": 63, "name": "Lentil (Masur)(Whole)"},
+    {"value": 4, "name": "Maize"},
+    {"value": 12, "name": "Mustard"},
+    {"value": 98, "name": "Niger Seed (Ramtil)"},
+    {"value": 23, "name": "Onion"},
+    {"value": 2, "name": "Paddy(Dhan)(Common)"},
+    {"value": 24, "name": "Potato"},
+    {"value": 30, "name": "Ragi (Finger Millet)"},
+    {"value": 59, "name": "Safflower"},
+    {"value": 11, "name": "Sesamum(Sesame,Gingelly,Til)"},
+    {"value": 13, "name": "Soyabean"},
+    {"value": 150, "name": "Sugarcane"},
+    {"value": 14, "name": "Sunflower"},
+    {"value": 285, "name": "Sunflower Seed"},
+    {"value": 78, "name": "Tomato"},
+    {"value": 66, "name": "Toria"},
+    {"value": 1, "name": "Wheat"},
+]
+
+BASE_URL = "https://api.agmarknet.gov.in/v1/dashboard-data/"
 
 
-# ---------------- Config ----------------
-URL = "https://agmarknet.gov.in/SearchCmmMkt.aspx"
-
-HEADERS = { 
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8', 
-    'accept-language': 'en-GB,en;q=0.7', 
-    'priority': 'u=0, i', 
-    'referer': 'https://agmarknet.gov.in/', 
-    'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"', 
-    'sec-ch-ua-mobile': '?0', 
-    'sec-ch-ua-platform': '"macOS"', 
-    'sec-fetch-dest': 'document', 
-    'sec-fetch-mode': 'navigate', 
-    'sec-fetch-site': 'same-origin', 
-    'sec-fetch-user': '?1', 
-    "Origin": "https://agmarknet.gov.in",
-    'sec-gpc': '1', 
-    'upgrade-insecure-requests': '1', 
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', 
-    'cookie':'__AntiXsrfToken=10f464f3292b4f74bfd4fbccffbec9ae; ASP.NET_SessionId=igg3ikwernciuguixqpqyqrr'    
-    }
-
-
-# Timezone
-IST = pytz.timezone("Asia/Kolkata")
-dotenv.load_dotenv()
-
-# # ---------------- Proxy List ----------------
-# PROXIES = [
-#     "http://xeodruel:07v9vsvi536c@142.111.48.253:7030",
-#     "http://xeodruel:07v9vsvi536c@198.23.239.134:6540",
-#     "http://xeodruel:07v9vsvi536c@45.38.107.97:6014",
-#     "http://xeodruel:07v9vsvi536c@107.172.163.27:6543",
-#     "http://xeodruel:07v9vsvi536c@64.137.96.74:6641",
-#     "http://xeodruel:07v9vsvi536c@154.203.43.247:5536",
-#     "http://xeodruel:07v9vsvi536c@84.247.60.125:6095",
-#     "http://xeodruel:07v9vsvi536c@216.10.27.159:6837",
-#     "http://xeodruel:07v9vsvi536c@142.111.67.146:5611",
-#     "http://xeodruel:07v9vsvi536c@142.147.128.93:6095"  # Replace PORT if different
-# ]
-
-# ------------- Helper Functions -------------
-
-def fetch_and_store(state_item: dict, commodity_item: dict, date_str: str, max_retries=3):
+def fetch_data(commodity_id):
     params = {
-        "Tx_Commodity": str(commodity_item["value"]),
-        "Tx_State": state_item["value"],
-        "Tx_District": "0",
-        "Tx_Market": "0",
-        "DateFrom": date_str,
-        "DateTo": date_str,
-        "Tx_Trend": "0",
-        "Tx_CommodityHead": commodity_item["name"],
-        "Tx_StateHead": state_item["name"],
+        "dashboard": "marketwise_price_arrival",
+        "date": "2025-11-16",
+        "group": "[100000]",
+        "commodity": f"[{commodity_id}]",
+        "variety": "100021",
+        "state": 17,  # Kerala
+        "district": "[100007,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285]",
+        "grades": "[4]",
+        "limit": 30,
+        "format": "json",
     }
 
-    for attempt in range(1, max_retries + 1):
-        # proxy = random.choice(PROXIES)
-        # proxies = {"http": proxy, "https": proxy}
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "origin": "https://agmarknet.gov.in",
+        "referer": "https://agmarknet.gov.in/",
+        "user-agent": "Mozilla/5.0",
+    }
 
-        try:
-            print(f"🔄 Attempt {attempt}: Fetching {commodity_item['name']} in {state_item['name']}")
-            response = requests.get(URL, headers=HEADERS, params=params, timeout=15)
-            response.raise_for_status()
+    try:
+        r = requests.get(BASE_URL, params=params, headers=headers, timeout=20)
+        return r.json()
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return None
 
-            soup = BeautifulSoup(response.text, "lxml")
-            table = soup.find("table", {"id": "cphBody_GridPriceData"})
-            if not table:
-                print(f"⚠️ No table found for {commodity_item['name']} in {state_item['name']}")
-                return
 
-            operations = []
-            for row in table.find_all("tr")[1:]:
-                cols = [td.get_text(strip=True) for td in row.find_all("td")]
-                if len(cols) != 10:
-                    continue
-                try:
-                    price_date = IST.localize(datetime.strptime(cols[9], "%d %b %Y"))
-                    last_updated_ist = datetime.now(IST).replace(tzinfo=None)
+def save_to_db(commodity_name, commodity_id, api_response):
+    """Handles both list and dict API responses safely."""
+    collection = db["statewise_prices"]
 
-                    filter_query = {
-                        "state": state_item["name"],
-                        "district": cols[1],
-                        "market": cols[2],
-                        "commodity": cols[3],
-                        "variety": cols[4],
-                        "grade": cols[5],
-                    }
+    # Case 1: API returned list → unexpected → store empty but valid
+    if isinstance(api_response, list):
+        print(f"⚠️ WARNING: API returned list for {commodity_name}, saving empty.")
+        doc = {
+            "commodity_id": commodity_id,
+            "commodity_name": commodity_name,
+            "state": "Kerala",
+            "records": [],
+        }
+        collection.insert_one(doc)
+        return
 
-                    record = {
-                        **filter_query,
-                        "min_price": float(cols[6]),
-                        "max_price": float(cols[7]),
-                        "modal_price": float(cols[8]),
-                        "price_date": price_date,
-                        "LastUpdated": last_updated_ist,
-                    }
+    # Case 2: API returned dict → correct format
+    if isinstance(api_response, dict):
+        data_section = api_response.get("data", {})
 
-                    operations.append(UpdateOne(filter_query, {"$set": record}, upsert=True))
-                except Exception as parse_err:
-                    print(f"⚠️ Skipping row due to parsing error: {parse_err}")
-                    continue
+        # If "data" itself is list — avoid crash
+        if isinstance(data_section, list):
+            print(f"⚠️ WARNING: 'data' is list for {commodity_name}, saving empty.")
+            doc = {
+                "commodity_id": commodity_id,
+                "commodity_name": commodity_name,
+                "state": "Kerala",
+                "records": [],
+            }
+            collection.insert_one(doc)
+            return
 
-            if operations:
-                collection_name = state_item["name"].replace(" ", "_")
-                collection = db[collection_name]
-                result = collection.bulk_write(operations)
-                print(f"✅ Processed {len(operations)} records for {commodity_item['name']} in {state_item['name']} "
-                      f"- New: {result.upserted_count}, Updated: {result.modified_count}")
-            else:
-                print(f"⚠️ No valid rows found for {commodity_item['name']} in {state_item['name']}")
-            return  # success
+        records = data_section.get("records", [])
 
-        except Exception as e:
-            print(f"❌ Error on attempt {attempt} for {commodity_item['name']} in {state_item['name']}: {e}")
-            sleep(2)
+        doc = {
+            "commodity_id": commodity_id,
+            "commodity_name": commodity_name,
+            "state": "Kerala",
+            "records": records,
+        }
 
-    print(f"❌ All {max_retries} attempts failed for {commodity_item['name']} in {state_item['name']}")
+        collection.insert_one(doc)
+        print(f"✅ Saved → {commodity_name} (ID: {commodity_id})")
+        return
 
-# ------------- Main Job -------------
+    # Case 3: Unexpected data type
+    print(f"❌ ERROR: Unknown API response type for {commodity_name}. Saving empty.")
+    doc = {
+        "commodity_id": commodity_id,
+        "commodity_name": commodity_name,
+        "state": "Kerala",
+        "records": [],
+    }
+    collection.insert_one(doc)
 
-def run_job():
-    now = datetime.now(IST)
-    current_date = now.strftime("%d-%b-%Y")
-    print(f"🕒 Starting scraper at {now}")
 
-    for s in state:
-        for c in commodities:
-            fetch_and_store(s, c, current_date)
+def run_scraper():
+    for item in commodities:
+        print("\n========================================================")
+        print(f"Fetching → {item['name']}")
+        print("========================================================")
 
-    print(f"✅ Job completed at {datetime.now(IST)}")
+        response = fetch_data(item["value"])
+        save_to_db(item["name"], item["value"], response)
 
-# ------------- If running directly -------------
+        time.sleep(1)  # Avoid rate-limit
+
+
 if __name__ == "__main__":
-    run_job()
+    run_scraper()

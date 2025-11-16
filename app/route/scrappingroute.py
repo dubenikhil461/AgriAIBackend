@@ -1,90 +1,19 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter
 from app.config.db import db
-from datetime import datetime
-from typing import Dict, Any, List, Optional
 
 router = APIRouter()
 
-# ---------- Helpers ----------
-def get_collection(state: str):
-    """Return MongoDB collection for a state"""
-    try:
-        return db[state.replace(" ", "_")]
-    except Exception:
-        raise HTTPException(status_code=400, detail=f"Invalid state: {state}")
 
-def format_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert MongoDB document into JSON-serializable dict"""
-    doc["_id"] = str(doc.get("_id"))
-    if "price_date" in doc and isinstance(doc["price_date"], datetime):
-        doc["price_date"] = doc["price_date"].isoformat()
-    return doc
-
-def distinct_nonempty(collection, field: str, query: Dict = {}) -> List[str]:
-    """Get non-empty distinct values for a field"""
-    values = collection.distinct(field, query)
-    return sorted([v for v in values if v and str(v).strip()])
-
-# ---------- Routes ----------
-
-@router.get("/states")
-def get_states():
-    """Return all available states"""
-    states = ["Kerala", "Maharashtra", "Uttar Pradesh", "NCT_of_Delhi"]
-    return {"states": states, "count": len(states)}
-
-@router.get("/district")
-def get_districts(state: str):
-    collection = get_collection(state)
-    districts = distinct_nonempty(collection, "district")
-    return {"districts": districts, "count": len(districts), "state": state}
-
-@router.get("/markets")
-def get_markets(state: str, district: str):
-    collection = get_collection(state)
-    markets = distinct_nonempty(collection, "market", {"district": district})
-    return {"markets": markets, "count": len(markets)}
-
-@router.get("/data")
-def get_data(
-    state: str, 
-    district: str, 
-    market: str, 
-    commodity: Optional[str] = None, 
-    limit: int = 100
-):
-    """
-    After selecting state -> district -> market,
-    return all documents for that selection with all keys
-    """
-    collection = get_collection(state)
+@router.get("/statewise-prices")
+def get_statewise_prices():
+    """Get all statewise price data from database."""
+    collection = db["statewise_prices"]
     
-    # Build query
-    query = {"district": district, "market": market}
-    if commodity:
-        query["commodity"] = commodity
+    # Synchronous MongoDB query
+    documents = list(collection.find({}))
     
-    cursor = collection.find(query).limit(limit)
-    results = [format_doc(doc) for doc in cursor]
+    # Convert ObjectId to string
+    for doc in documents:
+        doc["_id"] = str(doc["_id"])
     
-    return {
-        "data": results,
-        "count": len(results),
-        "state": state,
-        "district": district,
-        "market": market,
-        "commodity": commodity,
-        "last_updated": datetime.now().isoformat()
-    }
-
-# Additional route to get available commodities for a specific market
-@router.get("/commodities")
-def get_commodities(state: str, district: str, market: str):
-    """Get available commodities for a specific market"""
-    collection = get_collection(state)
-    commodities = distinct_nonempty(
-        collection, 
-        "commodity", 
-        {"district": district, "market": market}
-    )
-    return {"commodities": commodities, "count": len(commodities)}
+    return {"status": "success", "data": documents}

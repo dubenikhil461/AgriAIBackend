@@ -6,21 +6,22 @@ import pytz
 from app.route import predictroute, scrappingroute, emailroute
 from routes.crop_api import router as crop_router
 from routes.fertilizer_api import router as fertilizer_router
-from app.scrapping.statewise import run_job
+# from app.scrapping.statewise import run_job
 
 IST = pytz.timezone("Asia/Kolkata")
 scheduler = BackgroundScheduler(timezone=IST)
 
-async def lifespan(app: FastAPI):
-    # run_job()
-    scheduler.add_job(run_job, "cron", hour=23, minute=50)
-    scheduler.start()
-    print("🚀 Scheduler started: run_job will run daily at 11:50pm IST")
-    yield
-    scheduler.shutdown()
-    print("🛑 Scheduler stopped")
+# async def lifespan(app: FastAPI):
+#     # run_job()
+#     scheduler.add_job(run_job, "cron", hour=23, minute=50)
+#     scheduler.start()
+#     print("🚀 Scheduler started: run_job will run daily at 11:50pm IST")
+#     yield
+#     scheduler.shutdown()
+#     print("🛑 Scheduler stopped")
 
-app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # CORS
 origins = [
